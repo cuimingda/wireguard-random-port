@@ -21,35 +21,11 @@ generate_port() {
   done
 }
 
-confirm_change() {
-  local confirm
-
-  if ! { exec 3<>/dev/tty; } 2>/dev/null; then
-    echo "Cannot read confirmation from terminal. Run this script from an interactive shell." >&2
-    return 1
-  fi
-
-  if ! read -r -p "Apply this change? [y/N]: " confirm <&3; then
-    exec 3>&-
-    echo "Cannot read confirmation from terminal. Run this script from an interactive shell." >&2
-    return 1
-  fi
-
-  exec 3>&-
-  [[ "$confirm" =~ ^[yY]$ ]]
-}
-
 OLD_PORT=$(grep -oP 'ListenPort\s*=\s*\K\d+' "$CONFIG_FILE")
 NEW_PORT=$(generate_port)
 
 echo "Old port: $OLD_PORT"
 echo "New port: $NEW_PORT"
-
-echo
-if ! confirm_change; then
-  echo "Aborted."
-  exit 0
-fi
 
 echo "Stopping service..."
 systemctl stop "$SERVICE"
@@ -71,3 +47,5 @@ if ss -ulnp | grep -q ":$NEW_PORT "; then
 else
   echo "Warning: port $NEW_PORT not found in ss output!"
 fi
+
+echo "$NEW_PORT"
